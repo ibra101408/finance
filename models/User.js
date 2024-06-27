@@ -1,5 +1,43 @@
-const mongoose = require('mongoose')
+const mongoose = require('mongoose');
 
+// Define schema for transaction items
+const TransactionSchema = new mongoose.Schema({
+    amount: {
+        type: Number,
+        required: true
+    },
+    type: {
+        type: String,
+        enum: ['income', 'expense'],
+        required: true
+    },
+    description: {
+        type: String,
+        required: true
+    },
+    date: {
+        type: Date,
+        default: Date.now,
+    }
+});
+
+// Define schema for todo items
+const TodoSchema = new mongoose.Schema({
+    title: {
+        type: String,
+        required: true
+    },
+    description: {
+        type: String,
+        required: true
+    },
+    complete: {
+        type: Boolean,
+        default: false
+    }
+});
+
+// Define schema for users
 const UserSchema = new mongoose.Schema({
     googleId: {
         type: String,
@@ -20,14 +58,28 @@ const UserSchema = new mongoose.Schema({
     image: {
         type: String,
     },
-    email:{
-        type:String,
+    email: {
+        type: String,
         required: true,
     },
     createdAt: {
         type: Date,
         default: Date.now,
-    }
-})
+    },
+    // Reference to the todo items
+    todos: [TodoSchema],
+    // Finance features
+    balance: {
+        cash: {
+            type: Number,
+            default: 0
+        },
+        bank: {
+            type: Number,
+            default: 0
+        }
+    },
+    transactions: [TransactionSchema]
+});
 
-module.exports = mongoose.model('User', UserSchema)
+module.exports = mongoose.model('User', UserSchema);
