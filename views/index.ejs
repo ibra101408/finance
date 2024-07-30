@@ -109,6 +109,30 @@
             <button type="submit">Submit</button>
         </form>
 
+        <h3>Add a Friend</h3>
+
+        <input v-model="addFriendEmail" placeholder="Enter friend ID"/>
+        <button @click="addFriend">Add Friend</button>
+
+        <div v-for="request in filteredPendingFriendRequests" :key="request._id">
+            <span>{{ request.friendId ? request.friendId.displayName : 'Loading...' }} ({{ request.friendId ? request.friendId.email : 'Loading...' }})</span>
+            <button @click="respondToFriendRequest(request.friendId ? request.friendId._id : null, 'accepted')">Accept</button>
+            <button @click="respondToFriendRequest(request.friendId ? request.friendId._id : null, 'rejected')">Reject</button>
+        </div>
+
+
+        <h3>Delete a Friend</h3>
+        <form @submit="deleteFriend">
+            <ul>
+                <li v-for="friend in friends" :key="friend._id">
+                    {{ friend.friendId.email }}
+                </li>
+            </ul>
+            <label for="friendEmail">Friend's Email:</label>
+            <input type="email" v-model="friendEmail" required>
+            <button type="submit">Delete Friend</button>
+        </form>
+
     </div>
 
 </div>
@@ -129,6 +153,13 @@
                 transactionAmount: 0,
                 transactionDescription: '',
 
+                friendId: '',
+                friends: [],
+                friendEmail: '', // Updated to use email instead of ID
+                addFriendEmail: '', // Updated to use email instead of ID
+                pendingFriendRequests: [],
+
+
                 user: <%- JSON.stringify(userinfo) %>, // Pass user info to Vue instance without escaping
 
                 todos: [],
@@ -138,10 +169,13 @@
                 editFormVisible: false
             };
         },
-        created() {
-            this.getTodos();
-            this.getFinance();
+        computed: {
+            filteredPendingFriendRequests() {
+                // Filter out requests with status 'accepted'
+                return this.pendingFriendRequests.filter(request => request.status === 'pending');
+            }
         },
+
         methods: {
             async getTodos() {
                 try {
@@ -187,6 +221,76 @@
                     console.log("balance", this.balance);
                 } catch (err) {
                     console.error(err);
+                }
+            },
+
+            async getFriends() {
+                try {
+                    const response = await axios.get('/api/friends/all-friends');
+                    this.friends = response.data;
+                    console.log("friends!!", this.friends);
+
+                } catch (error) {
+                    console.error(error);
+                }
+            },
+
+            async addFriend(event) {
+                event.preventDefault();
+                try {
+                    const response = await axios.post('/api/friends/add-friend', {addFriendEmail: this.addFriendEmail});
+                    this.addFriendEmail = '';
+                    console.log(response);
+                    this.fetchPendingRequests();
+
+                } catch (error) {
+                    console.error(error);
+                }
+            },
+            async fetchPendingRequests() {
+                try {
+                    const response = await axios.get('/api/friends/pending-requests');
+                    this.pendingFriendRequests = response.data;
+                    console.log("pendingFriendRequests::::", this.pendingFriendRequests);
+                } catch (error) {
+                    console.error(error.response.data.message);
+                }
+            },
+
+            async respondToFriendRequest(friendId, status) {
+                if (!friendId) {
+                    console.error('Friend ID is undefined');
+                    return;
+                }
+                try {
+                    const response = await axios.post('/api/friends/respond-friend-request', {friendId, status});
+                    console.log("respondToFriendRequest:: ",response);
+                    // Optionally, update the local state or notify the user
+                    // For example, remove the request from pendingFriendRequests
+                    this.pendingFriendRequests = this.pendingFriendRequests.filter(request => request.friendId._id !== friendId);
+                } catch (error) {
+                    console.error(error);
+                }
+            },
+
+            /* async getFriendsFinance() {
+                 try {
+                     const response = await axios.get('/api/friends/friends-finance');
+                     this.friends = response.data;
+                 } catch (err) {
+                     console.error(err);
+                 }
+             },*/
+
+            async deleteFriend(event) {
+                event.preventDefault();
+                try {
+                    const response = await axios.post('/api/friends/delete-friend', {friendEmail: this.friendEmail});
+                    console.log("res delete::", response.data);
+                    await this.getFriends();
+                    this.friendEmail = '';
+                } catch (error) {
+                    console.error(error);
                 }
             },
 
@@ -246,7 +350,14 @@
                     console.error(error);
                 }
             }
-        }
+        },
+        async created() {
+            await this.getTodos();
+            await this.getFinance();
+            await this.getFriends();
+            await this.fetchPendingRequests();
+
+        },
     }).mount('#app');
 </script>
 

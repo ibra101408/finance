@@ -43,6 +43,7 @@ app.use(require('./routes/index'));
 app.use('/auth', require('./routes/auth'));
 app.use('/api/todos', require('./routes/api/todos'));
 app.use('/api/finance', require('./routes/api/finance'));
+app.use('/api/friends', require('./routes/api/friends'));
 
 // Set global var
 app.use(function (req, res, next) {

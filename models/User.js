@@ -37,6 +37,25 @@ const TodoSchema = new mongoose.Schema({
     }
 });
 
+// Define schema for friends
+const FriendSchema = new mongoose.Schema({
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    friendId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    status: {
+        type: String,
+        enum: ['pending', 'accepted', 'rejected'],
+        default: 'pending'
+    }
+});
+
 // Define schema for users
 const UserSchema = new mongoose.Schema({
     googleId: {
@@ -79,7 +98,10 @@ const UserSchema = new mongoose.Schema({
             default: 0
         }
     },
-    transactions: [TransactionSchema]
+    transactions: [TransactionSchema],
+    friends: [FriendSchema]
+
 });
 
 module.exports = mongoose.model('User', UserSchema);
+
