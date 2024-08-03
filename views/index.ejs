@@ -9,6 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
+
 <body>
 <nav class="navbar navbar-light bg-light">
     <div class="container-fluid">
@@ -81,8 +82,7 @@
         <h2>Transactions</h2>
         <ul>
             <li v-for="transaction in transactions" :key="transaction._id">
-                {{ transaction.date }} - {{ transaction.type }}: {{ transaction.amount }} - {{ transaction.description
-                }}
+                {{ transaction.date }} - {{ transaction.type }}: {{ transaction.amount }} - {{ transaction.description}}
             </li>
         </ul>
 
@@ -120,24 +120,22 @@
             <button @click="respondToFriendRequest(request.friendId ? request.friendId._id : null, 'rejected')">Reject</button>
         </div>
 
-
         <h3>Delete a Friend</h3>
         <form @submit="deleteFriend">
             <ul>
-                <li v-for="friend in friends" :key="friend._id">
+                <li v-for="friend in filteredAcceptedFriends" :key="friend._id">
                     {{ friend.friendId.email }}
+                    <button @click.prevent="deleteFriend(friend.friendId.email)">Delete Friend</button>
                 </li>
+
             </ul>
-            <label for="friendEmail">Friend's Email:</label>
-            <input type="email" v-model="friendEmail" required>
-            <button type="submit">Delete Friend</button>
         </form>
-
     </div>
-
 </div>
+<script src="/socket.io/socket.io.js"></script>
 
 <script>
+
     const {createApp} = Vue;
 
     createApp({
@@ -159,20 +157,26 @@
                 addFriendEmail: '', // Updated to use email instead of ID
                 pendingFriendRequests: [],
 
-
                 user: <%- JSON.stringify(userinfo) %>, // Pass user info to Vue instance without escaping
 
                 todos: [],
                 newTodo: {title: '', description: '', complete: false},
                 editTodo: {title: '', description: '', complete: false},
                 showAddForm: false,
-                editFormVisible: false
+                editFormVisible: false,
+
+                socket: null, // Add socket property
+
             };
         },
+
         computed: {
             filteredPendingFriendRequests() {
                 // Filter out requests with status 'accepted'
                 return this.pendingFriendRequests.filter(request => request.status === 'pending');
+            },
+            filteredAcceptedFriends() {
+                return this.friends.filter(friend => friend.status === 'accepted');
             }
         },
 
@@ -228,7 +232,6 @@
                 try {
                     const response = await axios.get('/api/friends/all-friends');
                     this.friends = response.data;
-                    console.log("friends!!", this.friends);
 
                 } catch (error) {
                     console.error(error);
@@ -238,11 +241,9 @@
             async addFriend(event) {
                 event.preventDefault();
                 try {
-                    const response = await axios.post('/api/friends/add-friend', {addFriendEmail: this.addFriendEmail});
+                    await axios.post('/api/friends/add-friend', {addFriendEmail: this.addFriendEmail});
                     this.addFriendEmail = '';
-                    console.log(response);
                     this.fetchPendingRequests();
-
                 } catch (error) {
                     console.error(error);
                 }
@@ -251,7 +252,6 @@
                 try {
                     const response = await axios.get('/api/friends/pending-requests');
                     this.pendingFriendRequests = response.data;
-                    console.log("pendingFriendRequests::::", this.pendingFriendRequests);
                 } catch (error) {
                     console.error(error.response.data.message);
                 }
@@ -263,10 +263,7 @@
                     return;
                 }
                 try {
-                    const response = await axios.post('/api/friends/respond-friend-request', {friendId, status});
-                    console.log("respondToFriendRequest:: ",response);
-                    // Optionally, update the local state or notify the user
-                    // For example, remove the request from pendingFriendRequests
+                    await axios.post('/api/friends/respond-friend-request', {friendId, status});
                     this.pendingFriendRequests = this.pendingFriendRequests.filter(request => request.friendId._id !== friendId);
                 } catch (error) {
                     console.error(error);
@@ -282,15 +279,26 @@
                  }
              },*/
 
-            async deleteFriend(event) {
-                event.preventDefault();
+            async deleteFriend(friendEmail) {
                 try {
-                    const response = await axios.post('/api/friends/delete-friend', {friendEmail: this.friendEmail});
-                    console.log("res delete::", response.data);
-                    await this.getFriends();
-                    this.friendEmail = '';
+                    const response = await fetch('/api/friends/delete-friend', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ friendEmail })
+                    });
+                    const result = await response.json();
+                    if (result.message === 'Friend deleted successfully') {
+                        // Update the friends list by filtering out the deleted friend
+                        this.friends = this.friends.filter(friend => friend.friendId.email !== friendEmail);
+                        this.socket.emit('friendDeleted', friendEmail);
+
+                    } else {
+                        alert(result.message);
+                    }
                 } catch (error) {
-                    console.error(error);
+                    console.error('Error deleting friend:', error);
                 }
             },
 
@@ -299,8 +307,6 @@
                     const res = await axios.get('/api/finance');
                     this.balance = res.data.balance;
                     this.transactions = res.data.transactions;
-                    console.log("trans", this.transactions)
-                    console.log("balance", this.balance)
                 } catch (err) {
                     console.error(err);
                 }
@@ -356,7 +362,41 @@
             await this.getFinance();
             await this.getFriends();
             await this.fetchPendingRequests();
+        },
+        mounted() {
+            this.socket = io('http://localhost:3000');  // Initialize WebSocket connection
 
+            // Listen for connection event
+            this.socket.on('connect', () => {
+                console.log('Connected to the server');
+            });
+
+            // Listen for disconnection event
+            this.socket.on('disconnect', () => {
+                console.log('Disconnected from server');
+            });
+
+            // Listen for new pending requests from the server
+            this.socket.on('newPendingRequest', (data) => {
+                this.pendingFriendRequests.push(data);  // Update the list with the new request
+            });
+
+            // Listen for accepting requests from the server
+            this.socket.on('friendRequestUpdated', (data) => {
+                this.friends.push(data);  // Update the list with the new request
+
+            });
+
+            // Listen for friend deletions
+            this.socket.on('friendDeleted', (data) => {
+                this.friends = this.friends.filter(friend => friend.friendId._id !== data.friendId);
+            });
+
+            // Emit a test event to verify connection
+            this.socket.emit('testConnection', 'Hello server');
+
+            // Fetch initial pending requests
+            this.fetchPendingRequests();
         },
     }).mount('#app');
 </script>

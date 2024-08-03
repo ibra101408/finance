@@ -17,12 +17,16 @@ A brief description of your project.
 
 Provide a short introduction to your project, what problem it solves, and its main functionalities.
 
-## Features
+# Features
 
-- User authentication with Passport.js
-- Session management with express-session and connect-mongo
-- CRUD operations for Todos and Finance
-- EJS templating for rendering views
+- **User Authentication with Passport.js**: Secure user login and registration using Passport.js for authentication.
+- **Session Management with express-session and connect-mongo**: Persistent session storage and management using MongoDB.
+- **CRUD Operations for Todos and Finance**: Create, Read, Update, and Delete operations for managing tasks and financial records.
+- **EJS Templating for Rendering Views**: Dynamic HTML rendering using Embedded JavaScript (EJS) templating engine.
+- **Friend Requests**:
+   - **Send Friend Requests**: Users can send friend requests by entering the email of another registered user.
+   - **Accept or Reject Friend Requests**: Users can accept or reject incoming friend requests.
+   - **Delete Friends**: Users can remove friends from their friends list.
 
 ## Technologies
 
