@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { ensureAuth } = require('../../middleware/auth');
-const User = require('../../models/User');
+const { ensureAuth } = require('../middleware/auth');
+const User = require('../models/User');
 
 // get all friends
 router.get('/all-friends', ensureAuth, async (req, res) => {

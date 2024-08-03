@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { ensureAuth } = require('../../middleware/auth');
-const User = require('../../models/User');
+const { ensureAuth } = require('../middleware/auth');
+const User = require('../models/User');
 
 // Get all todos for the logged-in user
 router.get('/', ensureAuth, async (req, res) => {

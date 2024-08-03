@@ -94,17 +94,17 @@ Provide a short introduction to your project, what problem it solves, and its ma
 
 #### Todos
 
-- `GET /api/todos` - Get all todos
-- `POST /api/todos` - Create a new todo
-- `PUT /api/todos/:id` - Update a todo
-- `DELETE /api/todos/:id` - Delete a todo
+- `GET /todos` - Get all todos
+- `POST /todos` - Create a new todo
+- `PUT /todos/:id` - Update a todo
+- `DELETE /todos/:id` - Delete a todo
 
 #### Finance
 
-- `GET /api/finance` - Get all finance records
-- `POST /api/finance` - Create a new finance record
-- `PUT /api/finance/:id` - Update a finance record
-- `DELETE /api/finance/:id` - Delete a finance record
+- `GET /finance` - Get all finance records
+- `POST /finance` - Create a new finance record
+- `PUT /finance/:id` - Update a finance record
+- `DELETE /finance/:id` - Delete a finance record
 
 ## Environment Variables
 

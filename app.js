@@ -87,9 +87,9 @@ io.on('connection', (socket) => {
 // Routes
 app.use(require('./routes/index'));
 app.use('/auth', require('./routes/auth'));
-app.use('/api/todos', require('./routes/api/todos'));
-app.use('/api/finance', require('./routes/api/finance'));
-app.use('/api/friends', require('./routes/api/friends'));
+app.use('/todos', require('./routes/todos'));
+app.use('/finance', require('./routes/finance'));
+app.use('/friends', require('./routes/friends'));
 
 const PORT = process.env.PORT || 3000;
 
