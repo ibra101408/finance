@@ -291,8 +291,8 @@
                     const result = await response.json();
                     if (result.message === 'Friend deleted successfully') {
                         // Update the friends list by filtering out the deleted friend
-                        this.friends = this.friends.filter(friend => friend.friendId.email !== friendEmail);
                         this.socket.emit('friendDeleted', friendEmail);
+                        this.friends = this.friends.filter(friend => friend.friendId.email !== friendEmail);
 
                     } else {
                         alert(result.message);
@@ -364,7 +364,9 @@
             await this.fetchPendingRequests();
         },
         mounted() {
-            this.socket = io('http://localhost:3000');  // Initialize WebSocket connection
+            // Initialize WebSocket connection with user ID
+            const userId = this.user._id; // Replace with the actual way you access the user ID in your Vue component
+            this.socket = io('http://localhost:3000', { query: { userId } });
 
             // Listen for connection event
             this.socket.on('connect', () => {
@@ -381,10 +383,9 @@
                 this.pendingFriendRequests.push(data);  // Update the list with the new request
             });
 
-            // Listen for accepting requests from the server
+            // Listen for friend request updates from the server
             this.socket.on('friendRequestUpdated', (data) => {
                 this.friends.push(data);  // Update the list with the new request
-
             });
 
             // Listen for friend deletions

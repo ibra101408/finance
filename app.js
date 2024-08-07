@@ -7,6 +7,7 @@ const passport = require('passport');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const cors = require('cors');
+const { setSocketIdForUser, removeSocketIdForUser } = require('./services/socketManager');
 
 const app = express();
 dotenv.config();
@@ -67,21 +68,28 @@ app.use((req, res, next) => {
 
 // Socket.IO connection handler
 io.on('connection', (socket) => {
-    console.log('A user connected');
+    const userId = socket.handshake.query.userId;
 
-    // Handle incoming messages from clients
-    socket.on('disconnect', () => {
-        console.log('User disconnected');
-    });
+    if (userId) {
+        // Store the socket ID associated with the user ID
+        setSocketIdForUser(userId, socket.id);
+        /*console.log('Connected:', {
+            socketId: socket.id,
+            userId: userId
+        });*/
 
-    socket.on('sendMessage', (message) => {
-        // Broadcast the message to all connected clients
-        io.emit('receiveMessage', message);
-    });
+        // Handle disconnection
+        socket.on('disconnect', () => {
+           /*console.log('Disconnected:', {
+                socketId: socket.id,
+                userId: userId
+            });*/
+            removeSocketIdForUser(userId);
+        });
 
-    socket.on('privateMessage', (message) => {
-        io.to(message.targetSocketId).emit('receiveMessage', message.content);
-    });
+    } else {
+        console.error('User ID not provided');
+    }
 });
 
 // Routes
