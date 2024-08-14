@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Todo List</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
-          integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
@@ -21,390 +20,34 @@
 
 <div id="app" class="container mt-5">
     <h2>Your Todo List</h2>
-    <button class="btn btn-primary mb-3" @click="showAddForm = true">Add Todo</button>
-
-    <div v-if="showAddForm" class="mb-3">
-        <h3>Add Todo</h3>
-        <form @submit="addTodo">
-            <div class="mb-3">
-                <label for="title" class="form-label">Title</label>
-                <input type="text" class="form-control" id="title" v-model="newTodo.title" required>
-            </div>
-            <div class="mb-3">
-                <label for="description" class="form-label">Description</label>
-                <textarea class="form-control" id="description" v-model="newTodo.description" required></textarea>
-            </div>
-            <div class="form-check mb-3">
-                <input type="checkbox" class="form-check-input" id="complete" v-model="newTodo.complete">
-                <label class="form-check-label" for="complete">Complete</label>
-            </div>
-            <button type="submit" class="btn btn-primary">Add Todo</button>
-            <button type="button" class="btn btn-secondary" @click="showAddForm = false">Cancel</button>
-        </form>
-    </div>
-
-    <ul class="list-group">
-        <li v-for="todo in todos" :key="todo._id" class="list-group-item">
-            <input type="checkbox" :checked="todo.complete" @change="toggleComplete(todo)">
-            <!-- Checkbox for completeness -->
-            <strong>{{ todo.title }}</strong>: {{ todo.description }}
-            <button class="btn btn-sm btn-warning float-end" @click="editTodoForm(todo)">Edit</button>
-            <button class="btn btn-sm btn-danger float-end me-2" @click="deleteTodo(todo)">Delete</button>
-        </li>
-    </ul>
-
-    <div v-if="editFormVisible" class="mt-5">
-        <h3>Edit Todo</h3>
-        <form @submit="updateTodo">
-            <div class="mb-3">
-                <label for="edit-title" class="form-label">Title</label>
-                <input type="text" class="form-control" id="edit-title" v-model="editTodo.title" required>
-            </div>
-            <div class="mb-3">
-                <label for="edit-description" class="form-label">Description</label>
-                <textarea class="form-control" id="edit-description" v-model="editTodo.description" required></textarea>
-            </div>
-            <div class="form-check mb-3">
-                <input type="checkbox" class="form-check-input" id="edit-complete" v-model="editTodo.complete">
-                <label class="form-check-label" for="edit-complete">Complete</label>
-            </div>
-            <button type="submit" class="btn btn-primary">Update Todo</button>
-            <button type="button" class="btn btn-secondary" @click="editFormVisible = false">Cancel</button>
-        </form>
-    </div>
-
-
-    <div>
-        <h2>Balance</h2>
-        <p>Cash: {{ balance.cash }}</p>
-        <p>Bank: {{ balance.bank }}</p>
-
-        <h2>Transactions</h2>
-        <ul>
-            <li v-for="transaction in transactions" :key="transaction._id">
-                {{ transaction.date }} - {{ transaction.type }}: {{ transaction.amount }} - {{ transaction.description}}
-            </li>
-        </ul>
-
-        <h3>Log a Transaction</h3>
-        <form @submit="logTransaction">
-            <label for="type">Type:</label>
-            <select v-model="transactionType" required>
-                <option value="income">Income</option>
-                <option value="expense">Expense</option>
-            </select>
-
-            <label for="type">Method:</label>
-            <select v-model="transactionMethod" required>
-                <option value="bank">Bank</option>
-                <option value="cash">Cash</option>
-            </select>
-
-            <label for="amount">Amount:</label>
-            <input type="number" v-model="transactionAmount" required>
-
-            <label for="description">Description:</label>
-            <input type="text" v-model="transactionDescription" required>
-
-            <button type="submit">Submit</button>
-        </form>
-
-        <h3>Add a Friend</h3>
-
-        <input v-model="addFriendEmail" placeholder="Enter friend ID"/>
-        <button @click="addFriend">Add Friend</button>
-
-        <div v-for="request in filteredPendingFriendRequests" :key="request._id">
-            <span>{{ request.friendId ? request.friendId.displayName : 'Loading...' }} ({{ request.friendId ? request.friendId.email : 'Loading...' }})</span>
-            <button @click="respondToFriendRequest(request.friendId ? request.friendId._id : null, 'accepted')">Accept</button>
-            <button @click="respondToFriendRequest(request.friendId ? request.friendId._id : null, 'rejected')">Reject</button>
-        </div>
-
-        <h3>Delete a Friend</h3>
-        <form @submit="deleteFriend">
-            <ul>
-                <li v-for="friend in filteredAcceptedFriends" :key="friend._id">
-                    {{ friend.friendId.email }}
-                    <button @click.prevent="deleteFriend(friend.friendId.email)">Delete Friend</button>
-                </li>
-
-            </ul>
-        </form>
-    </div>
+    <friends-component  :userinfo="user"></friends-component>
+    <todos-component></todos-component>
+    <finance-component></finance-component>
 </div>
-<script src="/socket.io/socket.io.js"></script>
 
-<script>
+<script type="module">
+    import Friends from '/js/components/freinds.js';
+    import Todos from '/js/components/todos.js';
+    import Finance from '/js/components/finance.js';
 
-    const {createApp} = Vue;
+    const { createApp } = Vue;
+
+    const userinfo = <%- JSON.stringify(userinfo) %>;
 
     createApp({
+        components: {
+            'friends-component': Friends,
+            'todos-component': Todos,
+            'finance-component': Finance
+        },
         data() {
             return {
-                balance: {
-                    cash: 0,
-                    bank: 0
-                },
-                transactions: [],
-                transactionType: 'income',
-                transactionMethod: 'bank',
-                transactionAmount: 0,
-                transactionDescription: '',
-
-                friendId: '',
-                friends: [],
-                friendEmail: '', // Updated to use email instead of ID
-                addFriendEmail: '', // Updated to use email instead of ID
-                pendingFriendRequests: [],
-
-                user: <%- JSON.stringify(userinfo) %>, // Pass user info to Vue instance without escaping
-
-                todos: [],
-                newTodo: {title: '', description: '', complete: false},
-                editTodo: {title: '', description: '', complete: false},
-                showAddForm: false,
-                editFormVisible: false,
-
-                socket: null, // Add socket property
-
+                user: userinfo,
             };
         },
 
-        computed: {
-            filteredPendingFriendRequests() {
-                // Filter out requests with status 'accepted'
-                return this.pendingFriendRequests.filter(request => request.status === 'pending');
-            },
-            filteredAcceptedFriends() {
-                return this.friends.filter(friend => friend.status === 'accepted');
-            }
-        },
-
-        methods: {
-            async getTodos() {
-                try {
-                    const response = await axios.get('/todos');
-                    this.todos = response.data;
-                } catch (error) {
-                    console.error(error);
-                }
-            },
-
-            async logTransaction(event) {
-                event.preventDefault(); // Prevent the default form submission behavior
-
-                try {
-                    const transactionData = {
-                        method: this.transactionMethod,
-                        amount: parseFloat(this.transactionAmount), // Ensure amount is a number
-                        description: this.transactionDescription.trim() // Ensure description is trimmed
-                    };
-
-                    let res;
-                    switch (this.transactionType) {
-                        case 'income':
-                            res = await axios.post('/finance/income', transactionData);
-                            console.log("Income response:", res);
-                            break;
-                        case 'expense':
-                            res = await axios.post('/finance/expense', transactionData);
-                            console.log("Expense response:", res);
-                            break;
-                        default:
-                            console.error("Invalid transaction type");
-                            return;
-                    }
-
-                    // Fetch the latest finance data after logging a transaction
-                    this.getFinance();
-
-                    //clear the form
-                    this.transactionType = 'income'; // or 'expense', depending on your default
-                    this.transactionAmount = '';
-                    this.transactionDescription = '';
-                    console.log("balance", this.balance);
-                } catch (err) {
-                    console.error(err);
-                }
-            },
-
-            async getFriends() {
-                try {
-                    const response = await axios.get('/friends/all-friends');
-                    this.friends = response.data;
-
-                } catch (error) {
-                    console.error(error);
-                }
-            },
-
-            async addFriend(event) {
-                event.preventDefault();
-                try {
-                    await axios.post('/friends/add-friend', {addFriendEmail: this.addFriendEmail});
-                    this.addFriendEmail = '';
-                    this.fetchPendingRequests();
-                } catch (error) {
-                    console.error(error);
-                }
-            },
-            async fetchPendingRequests() {
-                try {
-                    const response = await axios.get('/friends/pending-requests');
-                    this.pendingFriendRequests = response.data;
-                } catch (error) {
-                    console.error(error.response.data.message);
-                }
-            },
-
-            async respondToFriendRequest(friendId, status) {
-                if (!friendId) {
-                    console.error('Friend ID is undefined');
-                    return;
-                }
-                try {
-                    await axios.post('/friends/respond-friend-request', {friendId, status});
-                    this.pendingFriendRequests = this.pendingFriendRequests.filter(request => request.friendId._id !== friendId);
-                } catch (error) {
-                    console.error(error);
-                }
-            },
-
-            /* async getFriendsFinance() {
-                 try {
-                     const response = await axios.get('/friends/friends-finance');
-                     this.friends = response.data;
-                 } catch (err) {
-                     console.error(err);
-                 }
-             },*/
-
-            async deleteFriend(friendEmail) {
-                try {
-                    const response = await fetch('/friends/delete-friend', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ friendEmail })
-                    });
-                    const result = await response.json();
-                    if (result.message === 'Friend deleted successfully') {
-                        // Update the friends list by filtering out the deleted friend
-                        this.socket.emit('friendDeleted', friendEmail);
-                        this.friends = this.friends.filter(friend => friend.friendId.email !== friendEmail);
-
-                    } else {
-                        alert(result.message);
-                    }
-                } catch (error) {
-                    console.error('Error deleting friend:', error);
-                }
-            },
-
-            async getFinance() {
-                try {
-                    const res = await axios.get('/finance');
-                    this.balance = res.data.balance;
-                    this.transactions = res.data.transactions;
-                } catch (err) {
-                    console.error(err);
-                }
-            },
-
-            async addTodo() {
-                try {
-                    const response = await axios.post('/todos', this.newTodo);
-                    this.todos.push(response.data);
-                    this.newTodo = {title: '', description: '', complete: false};
-                    this.showAddForm = false;
-                } catch (error) {
-                    console.error(error);
-                }
-            },
-
-            async deleteTodo(todo) {
-                try {
-                    await axios.delete(`/todos/${todo._id}`);
-                    this.todos = this.todos.filter(t => t._id !== todo._id);
-                } catch (error) {
-                    console.error(error);
-                }
-            },
-
-            editTodoForm(todo) {
-                this.editTodo = {...todo};
-                this.editFormVisible = true;
-            },
-
-            async updateTodo() {
-                try {
-                    const response = await axios.put(`/todos/${this.editTodo._id}`, this.editTodo);
-                    const index = this.todos.findIndex(t => t._id === this.editTodo._id);
-                    this.todos[index] = response.data;
-                    this.editFormVisible = false;
-                } catch (error) {
-                    console.error(error);
-                }
-            },
-
-            async toggleComplete(todo) {
-                todo.complete = !todo.complete;
-                try {
-                    await axios.put(`/todos/${todo._id}`, todo);
-                } catch (error) {
-                    console.error(error);
-                }
-            }
-        },
-        async created() {
-            await this.getTodos();
-            await this.getFinance();
-            await this.getFriends();
-            await this.fetchPendingRequests();
-        },
-        mounted() {
-            // Initialize WebSocket connection with user ID
-            const userId = this.user._id; // Replace with the actual way you access the user ID in your Vue component
-            this.socket = io('http://localhost:3000', { query: { userId } });
-
-            // Listen for connection event
-            this.socket.on('connect', () => {
-                console.log('Connected to the server');
-            });
-
-            // Listen for disconnection event
-            this.socket.on('disconnect', () => {
-                console.log('Disconnected from server');
-            });
-
-            // Listen for new pending requests from the server
-            this.socket.on('newPendingRequest', (data) => {
-                this.pendingFriendRequests.push(data);  // Update the list with the new request
-            });
-
-            // Listen for friend request updates from the server
-            this.socket.on('friendRequestUpdated', (data) => {
-                this.friends.push(data);  // Update the list with the new request
-            });
-
-            // Listen for friend deletions
-            this.socket.on('friendDeleted', (data) => {
-                this.friends = this.friends.filter(friend => friend.friendId._id !== data.friendId);
-            });
-
-            // Emit a test event to verify connection
-            this.socket.emit('testConnection', 'Hello server');
-
-            // Fetch initial pending requests
-            this.fetchPendingRequests();
-        },
     }).mount('#app');
 </script>
 
 </body>
 </html>
-
-
-
-
