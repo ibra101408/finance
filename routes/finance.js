@@ -1,90 +1,123 @@
 const express = require('express');
 const router = express.Router();
-const { ensureAuth } = require('../middleware/auth');
+const {ensureAuth} = require('../middleware/auth');
 const User = require('../models/User');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const balanceService = require('../services/balanceService');
+const { DateTime } = require('luxon');
+
+router.use(cors()); // Enable CORS for all routes
+
+dotenv.config(); // Load environment variables from .env file
 
 // Get user's balance and transactions
 router.get('/', ensureAuth, async (req, res) => {
     try {
         const user = await User.findById(req.user.id).lean();
-        res.json({ balance: user.balance, transactions: user.transactions });
+        res.json({balance: user.balance, transactions: user.transactions});
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');
     }
 });
 
-// Log an income
-router.post('/income', ensureAuth, async (req, res) => {
-    try {
-        const user = await User.findById(req.user.id);
-        const { method, amount, description } = req.body;
-        console.log("method: ", method)
-        // Update cash balance
-        // Validate amount
-        if (amount <= 0) {
-            return res.status(400).json({ message: 'Amount must be a positive number' });
-        }
 
-        // Update balance based on method
-        switch (method) {
-            case 'cash':
-                user.balance.cash += amount;
-                break;
-            case 'bank':
-                user.balance.bank += amount;
-                break;
-            default:
-                return res.status(400).json({ message: 'Invalid transaction method' });
-        }
-
-        // Add transaction
-        const transaction = { amount, type: 'income', description };
-        user.transactions.push(transaction);
-
-        await user.save();
-        res.status(201).json(transaction);
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Server Error');
+router.get('/categories', (req, res) => {
+    const type = req.query.type;
+    let categories;
+    switch (type) {
+        case 'income':
+            categories = process.env.INCOME_CATEGORIES.split(',');
+            break;
+        case 'expense':
+            categories = process.env.EXPENSE_CATEGORIES.split(',');
+            break;
+        default:
+            return res.status(400).json({error: 'Invalid transaction type'});
     }
+
+    res.json({categories});
 });
 
-// Log an expense
-router.post('/expense', ensureAuth, async (req, res) => {
+
+
+
+// router.post('/transaction')
+router.post('/transaction', ensureAuth, async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
-        const { method, amount, description } = req.body;
-
-        console.log("Received expense request:", req.body);
+        const { method, amount, description, category, type, interval, isRecurring, nextTransactionDate } = req.body;
 
         // Validate amount
         if (amount <= 0) {
             return res.status(400).json({ message: 'Amount must be a positive number' });
         }
 
-        // Update balance based on method
-        switch (method) {
-            case 'cash':
-                if (user.balance.cash < amount) {
-                    return res.status(400).json({ message: 'Insufficient cash balance' });
-                }
-                user.balance.cash -= amount;
-                break;
-            case 'bank':
-                if (user.balance.bank < amount) {
-                    return res.status(400).json({ message: 'Insufficient bank balance' });
-                }
-                user.balance.bank -= amount;
-                break;
-            default:
-                return res.status(400).json({ message: 'Invalid transaction method' });
+        // Validate category
+        const validCategories = type === 'income'
+            ? process.env.INCOME_CATEGORIES.split(',')
+            : process.env.EXPENSE_CATEGORIES.split(',');
+        if (!validCategories.includes(category)) {
+            return res.status(400).json({ message: 'Invalid category' });
+        }
+
+        // Calculate nextTransactionDate based on interval
+        let calculatedNextTransactionDate = DateTime.now().setZone('Europe/Tallinn');
+        if (isRecurring && interval) {
+            switch (interval) {
+                case 'minute':
+                    calculatedNextTransactionDate = calculatedNextTransactionDate.plus({ minutes: 1 });
+                    break;
+                case 'daily':
+                    calculatedNextTransactionDate = calculatedNextTransactionDate.plus({ days: 1 });
+                    break;
+                case 'weekly':
+                    calculatedNextTransactionDate = calculatedNextTransactionDate.plus({ weeks: 1 });
+                    break;
+                case 'monthly':
+                    calculatedNextTransactionDate = calculatedNextTransactionDate.plus({ months: 1 });
+                    break;
+                case 'yearly':
+                    calculatedNextTransactionDate = calculatedNextTransactionDate.plus({ years: 1 });
+                    break;
+                default:
+                    return res.status(400).json({ message: 'Invalid interval' });
+            }
+        }
+
+        // Use provided nextTransactionDate if available, otherwise use calculated date
+        const finalNextTransactionDate = nextTransactionDate
+            ? DateTime.fromISO(nextTransactionDate, { zone: 'Europe/Tallinn' }).toJSDate() // Convert to JS Date object
+            : calculatedNextTransactionDate.toJSDate(); // Convert to JS Date object
+
+        // Handle non-recurring transactions immediately
+        if (!isRecurring) {
+            balanceService.updateBalance(user, type, method, amount);
+        } else {
+            // For recurring transactions, only apply to balance if the nextTransactionDate is now
+            const currentDateTime = DateTime.now().setZone('Europe/Tallinn').toJSDate();
+            if (currentDateTime >= finalNextTransactionDate) {
+                balanceService.updateBalance(user, type, method, amount);
+            }
         }
 
         // Add transaction
-        const transaction = { amount, method, type: 'expense', description };
-        user.transactions.push(transaction);
+        const transaction = {
+            amount,
+            type,
+            method,
+            description,
+            category,
+            date: DateTime.now().setZone('Europe/Tallinn').toJSDate(), // Convert to JS Date object
+            isRecurring,
+            recurring: isRecurring && interval ? {
+                interval,
+                nextTransactionDate: finalNextTransactionDate // Store as JS Date object
+            } : undefined
+        };
 
+        user.transactions.push(transaction);
         await user.save();
         res.status(201).json(transaction);
     } catch (err) {

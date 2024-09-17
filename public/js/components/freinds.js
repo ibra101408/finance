@@ -8,9 +8,7 @@ export default {
     }
   },
   template: `
-
-    <div>
-
+    <div class="container mt-5 box p-4">
       <h3>Add a Friend</h3>
       <input v-model="addFriendEmail" placeholder="Enter friend email"/>
       <button @click="addFriend">Add Friend</button>
@@ -26,7 +24,6 @@ export default {
         </ul>
       </form>
     </div>
-    <h3>Friend Requests</h3>
     <div v-for="request in filteredPendingFriendRequests" :key="request._id">
       <span>{{ request.friendId ? request.friendId.displayName : 'Loading...' }} (
         {{ request.friendId ? request.friendId.email : 'Loading...' }})</span>
@@ -34,6 +31,14 @@ export default {
       </button>
       <button @click="respondToFriendRequest(request.friendId ? request.friendId._id : null, 'rejected')">Reject
       </button>
+
+      <div v-if="friendFinance">
+        <h3>{{ selectedFriendEmail }}'s Finance</h3>
+        <p>Cash: {{ friendFinance.balance?.cash ?? 0 }}</p>
+        <p>Bank: {{ friendFinance.balance?.bank ?? 0 }}</p>
+
+        <canvas id="friendFinanceChart"></canvas>
+      </div>
     </div>
   `,
 

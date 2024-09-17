@@ -2,7 +2,7 @@ import io from 'https://cdn.socket.io/4.7.5/socket.io.esm.min.js';
 
 export default {
     template: `
-      <div id="app" class="container mt-5">
+      <div class="container mt-5 box p-4">
         <h2>Your Todo List</h2>
         <button class="btn btn-primary mb-3" @click="showAddForm = true">Add Todo</button>
 

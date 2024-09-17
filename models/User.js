@@ -11,13 +11,47 @@ const TransactionSchema = new mongoose.Schema({
         enum: ['income', 'expense'],
         required: true
     },
+    method: {
+        type: String,
+        enum: ['cash', 'bank'],
+        required: true
+    },
     description: {
         type: String,
         required: true
     },
     date: {
         type: Date,
-        default: Date.now,
+        default: new Date // Convert ISO string to Date object
+    },
+    category: {
+        type: String,
+        required: true,
+        validate: {
+            validator: function(value) {
+                const categories = this.type === 'income'
+                    ? process.env.INCOME_CATEGORIES.split(',')
+                    : process.env.EXPENSE_CATEGORIES.split(',');
+                return categories.includes(value);
+            },
+            message: props => `${props.value} is not a valid category for this transaction type!`
+        }
+    },
+
+    isRecurring: {
+        type: Boolean,
+        default: false
+    },
+    recurring: {
+        interval: {
+            type: String,
+            enum: ['minute', 'daily', 'weekly', 'monthly', 'yearly'],
+            required: false
+        },
+        nextTransactionDate: {
+            type: Date,
+            required: false
+        }
     }
 });
 
@@ -104,4 +138,3 @@ const UserSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model('User', UserSchema);
-
