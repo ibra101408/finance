@@ -219,7 +219,7 @@ router.post('/respond-friend-request', ensureAuth, async (req, res) => {
         console.error(err);
         res.status(500).json({ message: 'Server Error' });
     }
-});// Delete a friend
+});
 
 router.post('/delete-friend', ensureAuth, async (req, res) => {
     try {
@@ -287,14 +287,15 @@ router.post('/delete-friend', ensureAuth, async (req, res) => {
     }
 });
 
-// Get friends' finance data
-router.get('/friends-finance', ensureAuth, async (req, res) => {
+
+router.get('/friends-finance-data', async (req, res) => {
     try {
-        const user = await User.findById(req.user.id).populate('friends', 'balance transactions username').lean();
-        res.json(user.friends);
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Server Error');
+        const userId = req.user._id; // Replace with actual user ID logic
+        const friends = await getFriendsData(userId); // Fetch finance data for friends from DB
+        res.json(friends);
+    } catch (error) {
+        res.status(500).json({ error: 'Unable to fetch friends finance data' });
     }
 });
+
 module.exports = router;

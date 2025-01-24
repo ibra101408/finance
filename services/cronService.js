@@ -2,60 +2,67 @@
 const cron = require('node-cron');
 const User = require('../models/User');
 const balanceService = require('./balanceService');
+const { DateTime } = require('luxon');
 
 cron.schedule('* * * * *', async () => { // Runs every minute
+    console.log('Cron job started at:', new Date().toISOString());
+
     try {
         const users = await User.find();
 
         for (const user of users) {
-            const now = new Date();
+            const now = DateTime.now().setZone('Europe/Tallinn');
 
+            // Filter recurring transactions that are due
             const transactionsToProcess = user.transactions.filter(transaction =>
                 transaction.isRecurring &&
                 transaction.recurring &&
-                transaction.recurring.nextTransactionDate <= now
+                DateTime.fromJSDate(transaction.recurring.nextTransactionDate).setZone('Europe/Tallinn') <= now
             );
 
             for (const transaction of transactionsToProcess) {
-                // Create a new non-recurring transaction
+                // Create a new transaction based on the recurring template
                 const newTransaction = {
                     amount: transaction.amount,
                     type: transaction.type,
                     method: transaction.method,
                     description: transaction.description,
                     category: transaction.category,
-                    date: now,
-                    isRecurring: false // Set to false for the new transaction
+                    date: now.toJSDate(),
+                    isRecurring: false // The new transaction is not recurring
                 };
 
-                // Update balance
+                // Update the user's balance
                 balanceService.updateBalance(user, newTransaction.type, newTransaction.method, newTransaction.amount);
 
-                // Add the new non-recurring transaction
+                // Add the new transaction to the user's transaction history
                 user.transactions.push(newTransaction);
 
-                // Update next transaction date for the original recurring transaction
-                const currentDate = new Date(now);
+                // Calculate the next transaction date based on the interval
+                let nextTransactionDate = DateTime.fromJSDate(transaction.recurring.nextTransactionDate).setZone('Europe/Tallinn');
                 switch (transaction.recurring.interval) {
                     case 'minute':
-                        transaction.recurring.nextTransactionDate = new Date(currentDate.setMinutes(currentDate.getMinutes() + 1));
+                        nextTransactionDate = nextTransactionDate.plus({ minutes: 1 });
                         break;
                     case 'daily':
-                        transaction.recurring.nextTransactionDate = new Date(currentDate.setDate(currentDate.getDate() + 1));
+                        nextTransactionDate = nextTransactionDate.plus({ days: 1 });
                         break;
                     case 'weekly':
-                        transaction.recurring.nextTransactionDate = new Date(currentDate.setDate(currentDate.getDate() + 7));
+                        nextTransactionDate = nextTransactionDate.plus({ weeks: 1 });
                         break;
                     case 'monthly':
-                        transaction.recurring.nextTransactionDate = new Date(currentDate.setMonth(currentDate.getMonth() + 1));
+                        nextTransactionDate = nextTransactionDate.plus({ months: 1 });
                         break;
                     case 'yearly':
-                        transaction.recurring.nextTransactionDate = new Date(currentDate.setFullYear(currentDate.getFullYear() + 1));
+                        nextTransactionDate = nextTransactionDate.plus({ years: 1 });
                         break;
                 }
+
+                // Update the original recurring transaction's nextTransactionDate
+                transaction.recurring.nextTransactionDate = nextTransactionDate.toJSDate();
             }
 
-            // Save user only once after processing all transactions
+            // Save the user's updated transactions
             await user.save();
         }
     } catch (err) {

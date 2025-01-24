@@ -1,0 +1,169 @@
+/* Base Styles */
+body {
+    font-family: "Open Sans", sans-serif;
+    background-color: #f5f7fa;
+    color: #333;
+    line-height: 1.6;
+}
+
+/* Navbar */
+.navbar {
+    background-color: white !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+    padding: 1rem 2rem;
+    margin-bottom: 2rem;
+}
+
+.navbar-brand {
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+}
+
+.navbar-brand img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+}
+
+/* Container and Grid */
+.container {
+    max-width: 1400px;
+    padding: 0 2rem;
+}
+
+.row {
+    gap: 1.5rem;
+}
+
+/* Cards/Blocks */
+.block {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transition: transform 0.2s ease;
+}
+
+.block:hover {
+    transform: translateY(-2px);
+}
+
+.block h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 1.5rem;
+}
+
+/* Forms */
+.transaction-form input,
+.transaction-form select {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    width: 100%;
+    transition: border-color 0.2s ease;
+}
+
+.transaction-form input:focus,
+.transaction-form select:focus {
+    border-color: #4299e1;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+}
+
+.transaction-form button {
+    background-color: #4299e1;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+}
+
+.transaction-form button:hover {
+    background-color: #3182ce;
+}
+
+/* Lists */
+.transaction-logs,
+.todo-list,
+.friends-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.transaction-logs ul,
+.todo-list ul,
+.friends-list ul {
+    padding: 0;
+    margin: 0;
+}
+
+.transaction-logs li,
+.todo-list li,
+.friends-list li {
+    padding: 1rem;
+    border-bottom: 1px solid #edf2f7;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.transaction-logs li:last-child,
+.todo-list li:last-child,
+.friends-list li:last-child {
+    border-bottom: none;
+}
+
+/* Charts */
+.chart-container {
+    width: 100%;
+    padding: 1rem;
+    background: white;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+}
+
+.chartColumn {
+    gap: 1.5rem;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 3px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        padding: 0 1rem;
+    }
+
+    .block {
+        padding: 1rem;
+    }
+
+    .row {
+        flex-direction: column;
+    }
+
+    .chart-container {
+        width: 100%;
+    }
+}

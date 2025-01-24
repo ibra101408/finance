@@ -7,40 +7,49 @@ export default {
       required: true
     }
   },
-  template: `
-    <div class="container mt-5 box p-4">
-      <h3>Add a Friend</h3>
-      <input v-model="addFriendEmail" placeholder="Enter friend email"/>
-      <button @click="addFriend">Add Friend</button>
+    template: `
+    <div class="container block p-4">
+      <h3 class="mb-3 text-primary">Add a Friend</h3>
+      <div class="d-flex gap-2">
+        <input v-model="addFriendEmail" class="form-control" placeholder="Enter friend email"/>
+        <button class="btn btn-primary" @click="addFriend">Add Friend</button>
+      </div>
 
-      <h3>Delete a Friend</h3>
+      <h3 class="mt-4 mb-3 text-danger">Delete a Friend</h3>
       <form @submit="deleteFriend">
-        <ul>
-          <li v-for="friend in filteredAcceptedFriends" :key="friend._id">
+        <ul class="friends-list list-group">
+          <li v-for="friend in filteredAcceptedFriends" :key="friend._id" class="list-group-item d-flex justify-content-between align-items-center">
             {{ friend.friendId.email }}
-            <button @click.prevent="deleteFriend(friend.friendId.email)">Delete Friend</button>
+            <button class="btn btn-outline-danger btn-sm" @click.prevent="deleteFriend(friend.friendId.email)">Delete</button>
           </li>
-
         </ul>
       </form>
     </div>
-    <div v-for="request in filteredPendingFriendRequests" :key="request._id">
-      <span>{{ request.friendId ? request.friendId.displayName : 'Loading...' }} (
-        {{ request.friendId ? request.friendId.email : 'Loading...' }})</span>
-      <button @click="respondToFriendRequest(request.friendId ? request.friendId._id : null, 'accepted')">Accept
-      </button>
-      <button @click="respondToFriendRequest(request.friendId ? request.friendId._id : null, 'rejected')">Reject
-      </button>
 
-      <div v-if="friendFinance">
-        <h3>{{ selectedFriendEmail }}'s Finance</h3>
-        <p>Cash: {{ friendFinance.balance?.cash ?? 0 }}</p>
-        <p>Bank: {{ friendFinance.balance?.bank ?? 0 }}</p>
+    <h3 class="mt-4 mb-3 text-info">Friend Requests</h3>
+    <div v-for="request in filteredPendingFriendRequests" :key="request._id" class="block p-3 mb-2">
+      <span class="fw-bold">
+        {{ request.friendId ? request.friendId.displayName : 'Loading...' }} (
+        {{ request.friendId ? request.friendId.email : 'Loading...' }})
+      </span>
+      <div class="mt-2 d-flex gap-2">
+        <button class="btn btn-success" @click="respondToFriendRequest(request.friendId ? request.friendId._id : null, 'accepted')">Accept</button>
+        <button class="btn btn-danger" @click="respondToFriendRequest(request.friendId ? request.friendId._id : null, 'rejected')">Reject</button>
+      </div>
 
-        <canvas id="friendFinanceChart"></canvas>
+      <div v-if="friendFinance" class="mt-4">
+        <h3 class="text-secondary">{{ selectedFriendEmail }}'s Finance</h3>
+        <p><strong>Cash:</strong> {{ friendFinance.balance?.cash ?? 0 }}</p>
+        <p><strong>Bank:</strong> {{ friendFinance.balance?.bank ?? 0 }}</p>
+
+        <div class="chart-container">
+          <canvas id="friendFinanceChart"></canvas>
+        </div>
       </div>
     </div>
   `,
+
+
 
   data() {
     return {

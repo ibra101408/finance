@@ -22,7 +22,6 @@ router.get('/', ensureAuth, async (req, res) => {
     }
 });
 
-
 router.get('/categories', (req, res) => {
     const type = req.query.type;
     let categories;
@@ -40,21 +39,17 @@ router.get('/categories', (req, res) => {
     res.json({categories});
 });
 
-
-
-
-// router.post('/transaction')
 router.post('/transaction', ensureAuth, async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
         const { method, amount, description, category, type, interval, isRecurring, nextTransactionDate } = req.body;
 
-        // Validate amount
+        // Validate the amount
         if (amount <= 0) {
             return res.status(400).json({ message: 'Amount must be a positive number' });
         }
 
-        // Validate category
+        // Validate the category
         const validCategories = type === 'income'
             ? process.env.INCOME_CATEGORIES.split(',')
             : process.env.EXPENSE_CATEGORIES.split(',');
@@ -62,8 +57,10 @@ router.post('/transaction', ensureAuth, async (req, res) => {
             return res.status(400).json({ message: 'Invalid category' });
         }
 
-        // Calculate nextTransactionDate based on interval
-        let calculatedNextTransactionDate = DateTime.now().setZone('Europe/Tallinn');
+        // Calculate the next transaction date
+        let calculatedNextTransactionDate = nextTransactionDate
+            ? DateTime.fromISO(nextTransactionDate, { zone: 'Europe/Tallinn' })
+            : DateTime.now().setZone('Europe/Tallinn');
         if (isRecurring && interval) {
             switch (interval) {
                 case 'minute':
@@ -86,39 +83,32 @@ router.post('/transaction', ensureAuth, async (req, res) => {
             }
         }
 
-        // Use provided nextTransactionDate if available, otherwise use calculated date
-        const finalNextTransactionDate = nextTransactionDate
-            ? DateTime.fromISO(nextTransactionDate, { zone: 'Europe/Tallinn' }).toJSDate() // Convert to JS Date object
-            : calculatedNextTransactionDate.toJSDate(); // Convert to JS Date object
-
-        // Handle non-recurring transactions immediately
-        if (!isRecurring) {
-            balanceService.updateBalance(user, type, method, amount);
-        } else {
-            // For recurring transactions, only apply to balance if the nextTransactionDate is now
-            const currentDateTime = DateTime.now().setZone('Europe/Tallinn').toJSDate();
-            if (currentDateTime >= finalNextTransactionDate) {
-                balanceService.updateBalance(user, type, method, amount);
-            }
-        }
-
-        // Add transaction
+        // Create the transaction
         const transaction = {
             amount,
             type,
             method,
             description,
             category,
-            date: DateTime.now().setZone('Europe/Tallinn').toJSDate(), // Convert to JS Date object
+            date: DateTime.now().setZone('Europe/Tallinn').toJSDate(),
             isRecurring,
-            recurring: isRecurring && interval ? {
-                interval,
-                nextTransactionDate: finalNextTransactionDate // Store as JS Date object
-            } : undefined
+            recurring: isRecurring && interval
+                ? {
+                    interval,
+                    nextTransactionDate: calculatedNextTransactionDate.toJSDate()
+                }
+                : undefined
         };
 
+        // Handle non-recurring transactions immediately
+        if (!isRecurring) {
+            balanceService.updateBalance(user, type, method, amount);
+        }
+
+        // Save the transaction
         user.transactions.push(transaction);
         await user.save();
+
         res.status(201).json(transaction);
     } catch (err) {
         console.error(err);

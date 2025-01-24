@@ -1,6 +1,8 @@
 export default {
     template: `
-      <div class="container mt-5">
+      <!--import stylesheet file-->
+      <link rel="stylesheet" href="/finance.css">
+      <div class="container">
         <div class="row gy-5 finance_row">
           <div class="g-col-4 box p-4">
             <h2>Balance</h2>
@@ -11,7 +13,6 @@ export default {
           <div class="g-col-4 box p-4">
             <h3>Log a Transaction</h3>
             <form @submit="logTransaction">
-              <!-- Transaction Form -->
               <label for="type">Type:</label>
               <select v-model="transactionType" @change="updateCategories" required>
                 <option value="income">Income</option>
@@ -58,33 +59,70 @@ export default {
 
           <div class="g-col-4 box p-4">
             <h2>Transactions</h2>
-            <ul>
-              <li v-for="transaction in lastFiveTransactions" :key="transaction._id">
-                {{ new Date(transaction.date).toLocaleDateString() }} -
-                {{ transaction.type }}: {{ transaction.amount }} -
-                {{ transaction.description }} ({{ transaction.category }})
-                <span v-if="transaction.isRecurring">
-                  (Recurring: {{ transaction.recurring.interval }})
-                </span>
-              </li>
-            </ul>
+            <button class="btn btn-primary" @click="showTransactionsModal = true">View Transactions</button>
           </div>
         </div>
 
         <div class="row gy-5 mt-4">
           <div class="g-col-12 box p-4">
             <h2>Upcoming Recurring Transactions</h2>
-            <ul>
-              <li v-for="transaction in upcomingRecurringTransactions" :key="transaction._id">
-                <strong>{{ capitalize(transaction.type) }}</strong> of
-                <strong>{{ transaction.amount }}</strong>
-                via <strong>{{ transaction.method }}</strong>
-                for <strong>{{ transaction.category }}</strong> -
-                "<em>{{ transaction.description }}</em>".
-                Next Transaction:
-                <strong>{{ new Date(transaction.recurring.nextTransactionDate).toLocaleString() }}</strong>.
-              </li>
-            </ul>
+            <button class="btn btn-primary" @click="showRecurringModal = true">View Recurring Transactions</button>
+          </div>
+        </div>
+
+        <!-- Transactions Modal -->
+        <div
+            class="modal fade"
+            :class="{ show: showTransactionsModal, 'd-block': showTransactionsModal }"
+            @click.self="showTransactionsModal = false"
+        >
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Transactions</h5>
+                <button type="button" class="btn-close" @click="showTransactionsModal = false"></button>
+              </div>
+              <div class="modal-body">
+                <ul>
+                  <li v-for="transaction in lastFiveTransactions" :key="transaction._id">
+                    {{ new Date(transaction.date).toLocaleDateString() }} -
+                    {{ transaction.type }}: {{ transaction.amount }} -
+                    {{ transaction.description }} ({{ transaction.category }})
+                    <span v-if="transaction.isRecurring">
+                      (Recurring: {{ transaction.recurring.interval }})
+                    </span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upcoming Transactions Modal -->
+        <div class="modal fade" 
+             :class="{ show: showRecurringModal, 'd-block': showRecurringModal }"             
+             @click.self="showRecurringModal = false"
+        >
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Upcoming Recurring Transactions</h5>
+                <button type="button" class="btn-close" @click="showRecurringModal = false"></button>
+              </div>
+              <div class="modal-body">
+                <ul>
+                  <li v-for="transaction in upcomingRecurringTransactions" :key="transaction._id">
+                    <strong>{{ capitalize(transaction.type) }}</strong> of
+                    <strong>{{ transaction.amount }}</strong>
+                    via <strong>{{ transaction.method }}</strong>
+                    for <strong>{{ transaction.category }}</strong> -
+                    "<em>{{ transaction.description }}</em>".
+                    Next Transaction:
+                    <strong>{{ new Date(transaction.recurring.nextTransactionDate).toLocaleString() }}</strong>.
+                  </li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -97,7 +135,7 @@ export default {
                 bank: 0
             },
             transactions: [],
-            upcomingRecurringTransactions: [], // Store upcoming recurring transactions here
+            upcomingRecurringTransactions: [],
             transactionType: 'income',
             transactionMethod: 'bank',
             transactionAmount: 0,
@@ -107,10 +145,11 @@ export default {
             isRecurring: false,
             recurringInterval: '',
             nextTransactionDate: '',
-            expenseChart: null,
-            incomeChart: null
+            showTransactionsModal: false,
+            showRecurringModal: false,
         }
     },
+
     methods: {
         capitalize(word) {
             return word.charAt(0).toUpperCase() + word.slice(1);
@@ -125,7 +164,6 @@ export default {
         },
         async logTransaction(event) {
             event.preventDefault();
-
             try {
                 const transactionData = {
                     method: this.transactionMethod,
@@ -137,21 +175,19 @@ export default {
                     interval: this.recurringInterval,
                     nextTransactionDate: this.nextTransactionDate
                 };
-
                 const res = await axios.post('/finance/transaction', transactionData);
                 console.log("Transaction response:", res);
-
-                await this.getFinance();
-
                 // Clear the form
                 this.transactionAmount = '';
                 this.transactionDescription = '';
                 this.transactionCategory = '';
                 this.transactionType = 'income';
+                this.transactionMethod = 'bank';
                 this.isRecurring = false;
                 this.recurringInterval = '';
                 this.nextTransactionDate = '';
-                this.updateCategories();
+
+                await this.getFinance();
             } catch (err) {
                 console.error(err);
             }
@@ -161,17 +197,26 @@ export default {
                 const res = await axios.get('/finance');
                 this.balance = res.data.balance;
                 this.transactions = res.data.transactions;
-
-                // Filter and store upcoming recurring transactions
-                this.upcomingRecurringTransactions = this.transactions.filter(transaction =>
-                    transaction.isRecurring && transaction.recurring.nextTransactionDate
-                );
-
-                console.log("Filtered upcoming transactions:", this.upcomingRecurringTransactions);
+                this.upcomingRecurringTransactions = this.transactions.filter(transaction => transaction.isRecurring);
             } catch (err) {
                 console.error(err);
             }
         },
+        toggleBodyScroll(disable) {
+            if (disable) {
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = '';
+            }
+        }
+    },
+    watch: {
+        showTransactionsModal(newValue) {
+            this.toggleBodyScroll(newValue);
+        },
+        showRecurringModal(newValue) {
+            this.toggleBodyScroll(newValue);
+        }
     },
     async created() {
         this.updateCategories();
@@ -181,6 +226,5 @@ export default {
         lastFiveTransactions() {
             return this.transactions.slice(-5).reverse();
         },
-
     }
 }

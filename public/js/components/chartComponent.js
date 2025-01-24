@@ -2,7 +2,7 @@ import { renderChart } from '../utils/chartUtils.js';
 
 export default {
     template: `
-      <div class="chart-container mt-5 box p-4">
+      <div class="chart-container box p-4">
         <h3 v-if="type === 'expense'">Expense Categories</h3>
         <h3 v-if="type === 'income'">Income Categories</h3>
         <canvas :id="chartId" width="400" height="400"></canvas>

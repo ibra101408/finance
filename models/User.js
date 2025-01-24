@@ -46,11 +46,11 @@ const TransactionSchema = new mongoose.Schema({
         interval: {
             type: String,
             enum: ['minute', 'daily', 'weekly', 'monthly', 'yearly'],
-            required: false
+            required: function() { return this.isRecurring; } // Only required if isRecurring is true
         },
         nextTransactionDate: {
             type: Date,
-            required: false
+            required: function() { return this.isRecurring; } // Only required if isRecurring is true
         }
     }
 });
