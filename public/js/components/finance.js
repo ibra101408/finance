@@ -119,12 +119,72 @@ export default {
                     "<em>{{ transaction.description }}</em>".
                     Next Transaction:
                     <strong>{{ new Date(transaction.recurring.nextTransactionDate).toLocaleString() }}</strong>.
+                    <button class="btn btn-sm btn-primary" @click="editTransaction(transaction)">Edit</button>
+                    <button class="btn btn-sm btn-danger" @click="deleteTransaction(transaction._id)">Delete</button>
                   </li>
                 </ul>
               </div>
             </div>
           </div>
         </div>
+        
+        
+        <!-- Edit Recurring Transaction Modal -->
+        <div class="modal fade"
+             :class="{ show: showEditModal, 'd-block': showEditModal }"
+             @click.self="showEditModal = false"
+        >
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Edit Recurring Transaction</h5>
+                <button type="button" class="btn-close" @click="showEditModal = false"></button>
+              </div>
+              <div class="modal-body">
+                <form @submit.prevent="updateTransaction">
+                  <div class="mb-3">
+                    <label>Amount</label>
+                    <input type="number" v-model="editTransactionData.amount" class="form-control" required />
+                  </div>
+                  <div class="mb-3">
+                    <label>Type</label>
+                    <select v-model="editTransactionData.type" class="form-control">
+                      <option value="income">Income</option>
+                      <option value="expense">Expense</option>
+                    </select>
+                  </div>
+                  <div class="mb-3">
+                    <label>Method</label>
+                    <select v-model="editTransactionData.method" class="form-control">
+                      <option value="cash">Cash</option>
+                      <option value="bank">Bank</option>
+                    </select>
+                  </div>
+                  <div class="mb-3">
+                    <label>Category</label>
+                    <input type="text" v-model="editTransactionData.category" class="form-control" required />
+                  </div>
+                  <div class="mb-3">
+                    <label>Interval</label>
+                    <select v-model="editTransactionData.recurring.interval" class="form-control">
+                      <option value="minute">Minute</option>
+                      <option value="daily">Daily</option>
+                      <option value="weekly">Weekly</option>
+                      <option value="monthly">Monthly</option>
+                      <option value="yearly">Yearly</option>
+                    </select>
+                  </div>
+                  <div class="mb-3">
+                    <label>Next Transaction Date</label>
+                    <input type="datetime-local" v-model="editTransactionData.recurring.nextTransactionDate" class="form-control" required />
+                  </div>
+                  <button type="submit" class="btn btn-primary">Save Changes</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     `,
 
@@ -147,6 +207,19 @@ export default {
             nextTransactionDate: '',
             showTransactionsModal: false,
             showRecurringModal: false,
+            showEditModal: false,
+            editTransactionData: {
+                _id: '',
+                amount: 0,
+                type: 'income',
+                method: 'bank',
+                category: '',
+                isRecurring: false,
+                recurring: {
+                    interval: '',
+                    nextTransactionDate: ''
+                }
+            }
         }
     },
 
@@ -207,6 +280,28 @@ export default {
                 document.body.style.overflow = 'hidden';
             } else {
                 document.body.style.overflow = '';
+            }
+        },
+        editTransaction(transaction) {
+            this.editTransactionData = { ...transaction };
+            this.showEditModal = true;
+        },
+        async updateTransaction() {
+            try {
+                await axios.put(`/finance/transaction/${this.editTransactionData._id}`, this.editTransactionData);
+                this.showEditModal = false;
+                await this.getFinance(); // Refresh transactions
+            } catch (err) {
+                console.error(err);
+            }
+        },
+        async deleteTransaction(transactionId) {
+            if (!confirm("Are you sure you want to delete this transaction?")) return;
+            try {
+                await axios.delete(`/finance/transaction/${transactionId}`);
+                await this.getFinance(); // Refresh transactions
+            } catch (err) {
+                console.error(err);
             }
         }
     },
