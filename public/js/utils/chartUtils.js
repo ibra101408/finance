@@ -1,15 +1,15 @@
-// chartUtils.js
-
 export function renderChart(chartInstance, chartId, transactions, type) {
-    // Destroy previous chart instance if it exists
     if (chartInstance) {
         chartInstance.destroy();
     }
 
-    // Get the canvas context
-    const ctx = document.getElementById(chartId).getContext('2d');
+    const canvas = document.getElementById(chartId);
+    if (!canvas) {
+        console.error(`Canvas with ID '${chartId}' not found`);
+        return null;
+    }
+    const ctx = canvas.getContext('2d');
 
-    // Filter transactions by type and exclude future recurring transactions
     const currentDate = new Date();
     const filteredTransactions = transactions.filter(transaction => {
         const isPastTransaction = !transaction.isRecurring || new Date(transaction.date) <= currentDate;
@@ -17,7 +17,6 @@ export function renderChart(chartInstance, chartId, transactions, type) {
         return transaction.type === type && isPastTransaction && isNotFutureRecurring;
     });
 
-    // Calculate category sums
     const categorySums = {};
     filteredTransactions.forEach(transaction => {
         categorySums[transaction.category] = (categorySums[transaction.category] || 0) + transaction.amount;
@@ -25,8 +24,13 @@ export function renderChart(chartInstance, chartId, transactions, type) {
 
     const labels = Object.keys(categorySums);
     const data = Object.values(categorySums);
+    console.log("Chart data:", { labels, data, filteredTransactions });
 
-    // Create the new chart
+    if (labels.length === 0) {
+        console.warn("No data to render chart");
+        return null;
+    }
+
     chartInstance = new Chart(ctx, {
         type: 'pie',
         data: {
@@ -34,14 +38,7 @@ export function renderChart(chartInstance, chartId, transactions, type) {
             datasets: [{
                 label: `Amount ${type === 'expense' ? 'Spent' : 'Earned'}`,
                 data: data,
-                backgroundColor: [
-                    '#FF6384',
-                    '#36A2EB',
-                    '#FFCE56',
-                    '#4BC0C0',
-                    '#9966FF',
-                    '#FF9F40'
-                ]
+                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40']
             }]
         }
     });

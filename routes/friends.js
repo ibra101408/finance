@@ -287,15 +287,44 @@ router.post('/delete-friend', ensureAuth, async (req, res) => {
     }
 });
 
-
-router.get('/friends-finance-data', async (req, res) => {
+router.get('/friend-finance/:friendId', ensureAuth, async (req, res) => {
     try {
-        const userId = req.user._id; // Replace with actual user ID logic
-        const friends = await getFriendsData(userId); // Fetch finance data for friends from DB
-        res.json(friends);
-    } catch (error) {
-        res.status(500).json({ error: 'Unable to fetch friends finance data' });
+        const userId = req.user._id;
+        const { friendId } = req.params;
+
+        // Check if the users are friends and populate friend's name
+        const user = await User.findOne({
+            _id: userId,
+            'friends.friendId': friendId,
+            'friends.status': 'accepted'
+        }).populate('friends.friendId', 'displayName');
+
+        if (!user) {
+            return res.status(403).json({ message: 'You are not friends with this user' });
+        }
+
+        // Fetch the friend's finance data
+        const friend = await User.findById(friendId)
+            .select('displayName balance transactions')
+            .lean();
+
+        if (!friend) {
+            return res.status(404).json({ message: 'Friend not found' });
+        }
+
+        res.json({
+            finance: {
+                balance: friend.balance,
+                transactions: friend.transactions
+            },
+            displayName: friend.displayName // ✅ Now guaranteed to have the friend's name
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
     }
 });
 
 module.exports = router;
+
+

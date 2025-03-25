@@ -6,8 +6,22 @@ export default {
         <div class="row gy-5 finance_row">
           <div class="g-col-4 box p-4">
             <h2>Balance</h2>
-            <p>Cash: {{ balance?.cash ?? 0 }}</p>
-            <p>Bank: {{ balance?.bank ?? 0 }}</p>
+            <p>
+              <span class="tooltip">
+                <span class="material-symbols-outlined">payments</span>
+                <span class="tooltip-text">Cash Balance</span>
+              </span>
+              {{ balance?.cash ?? 0 }}
+            </p>
+
+            <p>
+              <span class="tooltip">
+                <span class="material-symbols-outlined">credit_card</span>
+                <span class="tooltip-text">Bank Balance</span>
+              </span>
+              {{ balance?.bank ?? 0 }}
+            </p>
+
           </div>
 
           <div class="g-col-4 box p-4">
@@ -99,8 +113,8 @@ export default {
         </div>
 
         <!-- Upcoming Transactions Modal -->
-        <div class="modal fade" 
-             :class="{ show: showRecurringModal, 'd-block': showRecurringModal }"             
+        <div class="modal fade"
+             :class="{ show: showRecurringModal, 'd-block': showRecurringModal }"
              @click.self="showRecurringModal = false"
         >
           <div class="modal-dialog">
@@ -127,8 +141,8 @@ export default {
             </div>
           </div>
         </div>
-        
-        
+
+
         <!-- Edit Recurring Transaction Modal -->
         <div class="modal fade"
              :class="{ show: showEditModal, 'd-block': showEditModal }"
@@ -144,7 +158,7 @@ export default {
                 <form @submit.prevent="updateTransaction">
                   <div class="mb-3">
                     <label>Amount</label>
-                    <input type="number" v-model="editTransactionData.amount" class="form-control" required />
+                    <input type="number" v-model="editTransactionData.amount" class="form-control" required/>
                   </div>
                   <div class="mb-3">
                     <label>Type</label>
@@ -162,7 +176,7 @@ export default {
                   </div>
                   <div class="mb-3">
                     <label>Category</label>
-                    <input type="text" v-model="editTransactionData.category" class="form-control" required />
+                    <input type="text" v-model="editTransactionData.category" class="form-control" required/>
                   </div>
                   <div class="mb-3">
                     <label>Interval</label>
@@ -176,7 +190,8 @@ export default {
                   </div>
                   <div class="mb-3">
                     <label>Next Transaction Date</label>
-                    <input type="datetime-local" v-model="editTransactionData.recurring.nextTransactionDate" class="form-control" required />
+                    <input type="datetime-local" v-model="editTransactionData.recurring.nextTransactionDate"
+                           class="form-control" required/>
                   </div>
                   <button type="submit" class="btn btn-primary">Save Changes</button>
                 </form>

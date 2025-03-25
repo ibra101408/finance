@@ -14,6 +14,15 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined&display=swap" />
+    <style>
+        .friends-component {
+            .modal-container {
+                width: 35%; /* Prevent shrinking */
+            }
+
+        }
+    </style>
 </head>
 
 <body>
@@ -51,6 +60,7 @@
         </div>
     </div>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script type="module">
     import Friends from '/js/components/freinds.js';
     import Finance from '/js/components/finance.js';
@@ -69,6 +79,9 @@
         data() {
             return {
                 user: userinfo,
+                friendFinance: null,
+                selectedFriendEmail: '',
+                friendFinanceTransactions: [], // Store formatted transactions
                 financeData: {}, // Store finance data here to pass to chart components
             };
         },
